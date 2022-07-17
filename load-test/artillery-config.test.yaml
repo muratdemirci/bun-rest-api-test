@@ -1,0 +1,44 @@
+config:
+  target: 'http://localhost:3000'
+  http:
+    timeout: 10 # Responses have to be sent within 10 seconds or the request will be aborted
+  processor: './processor.js'
+
+  phases:
+    # Create 100 virtual users every second for 60 seconds
+    - duration: 60 # seconds
+      arrivalRate: 100 # virtual users
+      name: 'Load test - user login - arrival rate'
+
+  payload:
+    # path is relative to the location of the test script
+    path: 'credential.csv'
+    fields:
+      - 'username'
+      - 'password'
+    order: 'sequence'
+
+  plugins:
+    expect: {}
+
+scenarios:
+  - name: 'Load test user login & Logout'
+    flow:
+      - post:
+          url: '/login'
+          json:
+            username: '{{ username }}'
+            password: '{{ password }}'
+          beforeRequest: parsePropertyToString
+          capture:
+            - json: '$.token'
+              as: token
+          expect:
+            - statusCode: 200
+
+      - post:
+          url: '/logout'
+          headers:
+            Authorization: 'Bearer {{ token }}'
+          expect:
+            - statusCode: 200
